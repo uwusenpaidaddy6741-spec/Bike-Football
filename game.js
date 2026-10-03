@@ -291,6 +291,38 @@ bike.add(riderBody);
 bike.position.set(0, 0, 30);
 
 // ============================================================
+// FOOTBALL
+// ============================================================
+
+const footballGroup = new THREE.Group();
+scene.add(footballGroup);
+
+const footballMaterial = new THREE.MeshStandardMaterial({
+    color: 0x8b4513,
+    roughness: 0.8
+});
+
+const football = new THREE.Mesh(
+    new THREE.SphereGeometry(0.32, 16, 10),
+    footballMaterial
+);
+
+football.scale.set(1.35, 0.8, 0.8);
+football.castShadow = true;
+
+footballGroup.add(football);
+
+// Starting position of football
+footballGroup.position.set(0, 0.35, 24);
+
+let hasFootball = false;
+let footballThrown = false;
+
+const footballVelocity = new THREE.Vector3();
+
+const footballGravity = 18;
+
+// ============================================================
 // CONTROLS
 // ============================================================
 
@@ -304,7 +336,9 @@ window.addEventListener("keydown", (event) => {
         event.code === "KeyA" ||
         event.code === "KeyS" ||
         event.code === "KeyD" ||
-        event.code === "KeyF"
+        event.code === "KeyF" ||
+event.code === "KeyE" ||
+event.code === "KeyR"
     ) {
         event.preventDefault();
     }
@@ -547,6 +581,160 @@ function updateMovement(dt) {
 }
 
 // ============================================================
+// FOOTBALL UPDATE
+// ============================================================
+
+function updateFootball(dt) {
+
+    // --------------------------------------------------------
+    // PICK UP FOOTBALL
+    // --------------------------------------------------------
+
+    if (
+        keys.KeyE &&
+        !hasFootball &&
+        !footballThrown
+    ) {
+
+        const distance = bike.position.distanceTo(
+            footballGroup.position
+        );
+
+        if (distance < 2.5) {
+
+            hasFootball = true;
+
+            footballThrown = false;
+
+            footballVelocity.set(0, 0, 0);
+        }
+    }
+
+    // --------------------------------------------------------
+    // CARRY FOOTBALL
+    // --------------------------------------------------------
+
+    if (hasFootball) {
+
+        const carryPosition = new THREE.Vector3(
+            0.7,
+            1.0,
+            -0.8
+        );
+
+        carryPosition.applyQuaternion(
+            bike.quaternion
+        );
+
+        footballGroup.position.copy(
+            bike.position
+        ).add(carryPosition);
+
+        footballGroup.rotation.copy(
+            bike.rotation
+        );
+
+        // ----------------------------------------------------
+        // THROW
+        // ----------------------------------------------------
+
+        if (keys.KeyR) {
+
+            hasFootball = false;
+            footballThrown = true;
+
+            // Camera direction
+            const throwDirection = new THREE.Vector3(
+                0,
+                0,
+                -1
+            );
+
+            const cameraRotation = new THREE.Euler(
+                cameraPitch,
+                cameraYaw,
+                0,
+                "YXZ"
+            );
+
+            throwDirection.applyEuler(
+                cameraRotation
+            );
+
+            throwDirection.normalize();
+
+            // Throw speed
+            footballVelocity.copy(
+                throwDirection.multiplyScalar(24)
+            );
+
+            // Extra upward force
+            footballVelocity.y += 6;
+
+            // Move ball slightly away from bike
+            footballGroup.position.addScaledVector(
+                throwDirection,
+                1.0
+            );
+        }
+    }
+
+    // --------------------------------------------------------
+    // BALL IN FLIGHT
+    // --------------------------------------------------------
+
+    if (footballThrown) {
+
+        footballVelocity.y -= footballGravity * dt;
+
+        footballGroup.position.addScaledVector(
+            footballVelocity,
+            dt
+        );
+
+        // Spin the football
+        footballGroup.rotation.x += 8 * dt;
+        footballGroup.rotation.z += 5 * dt;
+
+        // Ground collision
+        if (footballGroup.position.y < 0.35) {
+
+            footballGroup.position.y = 0.35;
+
+            footballVelocity.y *= -0.45;
+
+            footballVelocity.x *= 0.82;
+            footballVelocity.z *= 0.82;
+
+            // Stop bouncing when slow
+            if (
+                Math.abs(footballVelocity.y) < 1 &&
+                footballVelocity.length() < 2
+            ) {
+                footballVelocity.set(0, 0, 0);
+            }
+        }
+
+        // Pick the ball back up
+        const distanceToBike =
+            bike.position.distanceTo(
+                footballGroup.position
+            );
+
+        if (
+            distanceToBike < 2.5 &&
+            keys.KeyE
+        ) {
+
+            hasFootball = true;
+            footballThrown = false;
+
+            footballVelocity.set(0, 0, 0);
+        }
+    }
+}
+
+// ============================================================
 // CAMERA
 // ============================================================
 
@@ -622,8 +810,9 @@ function gameLoop(time) {
     lastTime = time;
 
     updateMovement(dt);
-    updateJump(dt);
-    updateCamera(dt);
+updateJump(dt);
+updateFootball(dt);
+updateCamera(dt);
 
     renderer.render(
         scene,
