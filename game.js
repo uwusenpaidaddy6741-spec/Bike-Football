@@ -696,6 +696,33 @@ function updateFootball(dt) {
         footballGroup.rotation.x += 8 * dt;
         footballGroup.rotation.z += 5 * dt;
 
+        // --------------------------------------------------------
+// KEEP FOOTBALL INSIDE FIELD
+// --------------------------------------------------------
+
+const fieldLimitX = 26;
+const fieldLimitZ = 49;
+
+if (footballGroup.position.x < -fieldLimitX) {
+    footballGroup.position.x = -fieldLimitX;
+    footballVelocity.x = Math.abs(footballVelocity.x) * 0.65;
+}
+
+if (footballGroup.position.x > fieldLimitX) {
+    footballGroup.position.x = fieldLimitX;
+    footballVelocity.x = -Math.abs(footballVelocity.x) * 0.65;
+}
+
+if (footballGroup.position.z < -fieldLimitZ) {
+    footballGroup.position.z = -fieldLimitZ;
+    footballVelocity.z = Math.abs(footballVelocity.z) * 0.65;
+}
+
+if (footballGroup.position.z > fieldLimitZ) {
+    footballGroup.position.z = fieldLimitZ;
+    footballVelocity.z = -Math.abs(footballVelocity.z) * 0.65;
+}
+
         // Ground collision
         if (footballGroup.position.y < 0.35) {
 
