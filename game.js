@@ -543,19 +543,18 @@ function updateMovement(dt) {
     }
 
     // Move bike forward
-    const direction = new THREE.Vector3(
-        0,
-        0,
-        -1
-    );
+    // Move bike forward using ONLY its Y rotation.
+// Wheelie tilt must never affect movement.
+const direction = new THREE.Vector3(
+    -Math.sin(bike.rotation.y),
+    0,
+    -Math.cos(bike.rotation.y)
+);
 
-    direction.applyQuaternion(bike.quaternion);
-
-    bike.position.addScaledVector(
-        direction,
-        currentSpeed * dt
-    );
-
+bike.position.addScaledVector(
+    direction,
+    currentSpeed * dt
+);
     // Keep bike on field
     bike.position.x = THREE.MathUtils.clamp(
         bike.position.x,
@@ -569,14 +568,14 @@ function updateMovement(dt) {
         48
     );
 
-    // Wheelie visual
-    const targetTilt = wheelie ? -0.3 : 0;
+    // Wheelie visual tilt
+const targetTilt = wheelie ? -0.3 : 0;
 
-    bike.rotation.x = THREE.MathUtils.lerp(
-        bike.rotation.x,
-        targetTilt,
-        8 * dt
-    );
+bike.rotation.x = THREE.MathUtils.lerp(
+    bike.rotation.x,
+    targetTilt,
+    8 * dt
+);
 
 }
 
@@ -771,19 +770,21 @@ function updateCamera(dt) {
     const height = 4;
 
     const offset = new THREE.Vector3(
-        0,
-        height,
-        distance
-    );
+    0,
+    height,
+    distance
+);
 
-    const rotation = new THREE.Euler(
-        cameraPitch,
-        cameraYaw,
-        0,
-        "YXZ"
-    );
+// Camera follows mouse look only.
+// It does NOT inherit the bike's wheelie pitch.
+const rotation = new THREE.Euler(
+    cameraPitch,
+    cameraYaw,
+    0,
+    "YXZ"
+);
 
-    offset.applyEuler(rotation);
+offset.applyEuler(rotation);
 
     const target = bike.position.clone();
 
